@@ -5,9 +5,9 @@ application:
   security:
     jwt:
       secret-key: 8z6h+SoGKYYsWlR5QpqZUNlR2D2WrAy4md6AwQXzjCI=
-      expiration: 7600
+      expiration: 3600000
       refresh-token:
-        expiration: 7000
+        expiration: 43200000
 
 spring:
   datasource:

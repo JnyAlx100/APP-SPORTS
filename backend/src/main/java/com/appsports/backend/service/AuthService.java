@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.catalina.User;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -55,6 +56,31 @@ public class AuthService {
         revokeAllUserTokens(user);
         saveUserToken(user, jwtToken);
         return new TokenResponse(jwtToken, refreshToken);
+    }
+
+    public TokenResponse refreshToken(final String authHeader) {
+        if (authHeader != null && !authHeader.startsWith("Bearer ")) {
+            throw new IllegalArgumentException("Invalid JWT Bearer token");
+        }
+
+        final String refreshToken = authHeader.substring(7);
+        final String userEmail = jwtService.extractUsername(refreshToken);
+
+        if (userEmail == null) {
+            throw new IllegalArgumentException("Invalid JWT Refresh token");
+        }
+
+        final Usuario usuario = usuarioRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException(userEmail));
+
+        if (!jwtService.isTokenValid(refreshToken, usuario)) {
+            throw new IllegalArgumentException("Invalid JWT Refresh token");
+        }
+
+        final String accessToken = jwtService.generateToken(usuario);
+        revokeAllUserTokens(usuario);
+        saveUserToken(usuario, accessToken);
+        return new TokenResponse(accessToken, refreshToken);
     }
 
     private void revokeAllUserTokens(final Usuario usuario) {
