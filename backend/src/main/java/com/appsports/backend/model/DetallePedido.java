@@ -1,0 +1,22 @@
+package com.appsports.backend.model;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+@Data
+@Entity
+@Table(name = "detalle_pedido")
+public class DetallePedido {
+
+    @Id
+    @Column(name = "iddetalle_pedido")
+    private Integer id;
+
+    @ManyToOne
+    @JoinColumn(name = "pedido_idpedido")
+    private Pedido pedido;
+
+    @ManyToOne
+    @JoinColumn(name = "articulo_idarticulo")
+    private Articulo articulo;
+}
