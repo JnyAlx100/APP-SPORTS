@@ -1,4 +1,4 @@
-package com.appsports.backend.model;
+package com.appsports.backend.model.entities;
 
 import jakarta.persistence.*;
 import lombok.Data;
