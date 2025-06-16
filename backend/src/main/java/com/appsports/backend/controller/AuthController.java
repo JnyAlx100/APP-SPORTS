@@ -1,5 +1,6 @@
 package com.appsports.backend.controller;
 
+import com.appsports.backend.model.request.LoginRequest;
 import com.appsports.backend.model.request.RegisterRequest;
 import com.appsports.backend.model.response.TokenResponse;
 import com.appsports.backend.service.AuthService;
@@ -20,6 +21,12 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<TokenResponse> register(@RequestBody final RegisterRequest registerRequest) {
         final TokenResponse token = authService.register(registerRequest);
+        return ResponseEntity.ok(token);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<TokenResponse> login(@RequestBody final LoginRequest loginRequest) {
+        final TokenResponse token = authService.login(loginRequest);
         return ResponseEntity.ok(token);
     }
 }
