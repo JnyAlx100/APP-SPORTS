@@ -4,7 +4,7 @@ server:
 application:
   security:
     jwt:
-      secret-key: APPSPORT
+      secret-key: 8z6h+SoGKYYsWlR5QpqZUNlR2D2WrAy4md6AwQXzjCI=
       expiration: 7600
       refresh-token:
         expiration: 7000
