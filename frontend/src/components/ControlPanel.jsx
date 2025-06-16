@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function ControlPanel() {
+  const navigate = useNavigate();
+  
   const initialArticulos = [
     { id: 1, nombre: 'Balón de Fútbol', descripcion: 'Balón profesional', monto: 250, stock: 10, imagen: 'https://via.placeholder.com/100?text=Balon' },
     { id: 2, nombre: 'Raqueta de Tenis', descripcion: 'Raqueta de carbono', monto: 500, stock: 5, imagen: 'https://via.placeholder.com/100?text=Raqueta' },
@@ -62,13 +65,26 @@ export default function ControlPanel() {
     setDireccionFacturacion('');
   };
 
+  const handleProfile = () => {
+    navigate('/profile')
+  }
+
+  const handleOrders = () => {
+    navigate('/orders')
+  }
+
+  const handleLogout = () => {
+    navigate('/')
+  }
+
   return (
     <div style={styles.container}>
       <nav style={styles.navbar}>
         <div style={styles.logo}>Control Panel</div>
         <div style={styles.menu}>
-          <span style={styles.menuItem}>Perfil</span>
-          <span style={styles.menuItem}>Órdenes</span>
+          <span style={styles.menuItem} onClick={handleProfile}>Perfil</span>
+          <span style={styles.menuItem} onClick={handleOrders}>Órdenes</span>
+          <span style={styles.menuItem} onClick={handleLogout}>Cerrar sesión</span>
         </div>
       </nav>
 

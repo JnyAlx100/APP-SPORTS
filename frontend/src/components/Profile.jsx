@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Profile() {
-  // Datos simulados del usuario
+  const navigate = useNavigate();
+
   const initialUser = {
     nombres: 'Juan',
     apellidos: 'Pérez',
@@ -23,8 +25,7 @@ export default function Profile() {
   };
 
   const handleBack = () => {
-    // Simulación de navegación (puedes integrar con React Router luego)
-    alert('Regresando al panel de control');
+    navigate('/control-panel')
   };
 
   return (

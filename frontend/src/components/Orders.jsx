@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Orders() {
-  // Datos simulados de pedidos
+
+  const navigate = useNavigate();
+
   const initialOrders = [
     {
       id: 'ORD001',
@@ -38,7 +41,7 @@ export default function Orders() {
   };
 
   const handleBack = () => {
-    alert('Regresando al panel de control');
+    navigate('/control-panel')
   };
 
   return (
