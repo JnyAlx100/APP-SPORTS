@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -19,10 +20,78 @@ export default function Register() {
     setFormData(prevState => ({ ...prevState, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     console.log(formData);
+    try {
+      if (!fieldsAreValid()) {
+        return;
+      }
+      const loginResponse = await axios.post(
+        "http://localhost:8080/auth/register",
+        {
+          direccionFacturacion: formData.direccionFacturacion,
+          password: formData.password,
+          nit: formData.nit,
+          nombres: formData.nombres,
+          apellidos: formData.apellidos,
+          email: formData.email,
+          fechaNacimiento: formData.fechaNacimiento
+        }
+      );
+      console.log("form:", JSON.stringify(formData));
+      console.log(loginResponse.data);
+      if (loginResponse.status !== 200) {
+        throw new Error("Error en la solicitud");
+      }
+      alert('Usuario creado exitosamente')
+      cleanFields()
+    } catch (error) {
+      console.error("Error al obtener los usuarios:", error);
+    }
   };
+
+  const cleanFields = () => {
+    setFormData({
+      nombres: "",
+      apellidos: "",
+      nit: "",
+      direccionFacturacion: "",
+      email: "",
+      password: "",
+      fechaNacimiento: "",
+    });
+  };
+
+  const fieldsAreValid = () => {
+    if (!formData.fechaNacimiento || formData.fechaNacimiento == '') {
+      alert('Por favor, ingrese una fecha de nacimiento');
+      return false;
+    }
+    if (esMenorDeEdad()) {
+      alert('El usuario debe ser mayor de edad')
+      return false;
+    }
+    console.log(formData.fechaNacimiento)
+    return true
+  }
+
+  function esMenorDeEdad() {
+  const fechaNacimiento = new Date(formData.fechaNacimiento);
+  const hoy = new Date();
+
+  let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
+
+  const mesActual = hoy.getMonth();
+  const mesNacimiento = fechaNacimiento.getMonth();
+
+  if (mesActual < mesNacimiento || 
+     (mesActual === mesNacimiento && hoy.getDate() < fechaNacimiento.getDate())) {
+    edad--;
+  }
+  
+  return edad < 18;
+}
 
   const handleBack = () => {
     navigate('/')

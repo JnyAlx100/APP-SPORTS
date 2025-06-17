@@ -22,11 +22,12 @@ export default function Login() {
       console.log("Email:", email);
       console.log("Password:", password);
       console.log(loginResponse.data);
-      if (loginResponse.status != 200) {
+      if (loginResponse.status !== 200) {
         throw new Error("Error en la solicitud");
       }
       navigate("/control-panel");
     } catch (error) {
+      alert('Correo o contrasena incorrectos')
       console.error("Error al obtener los usuarios:", error);
     }
   };
