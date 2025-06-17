@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Register from './Register';
+import axios from 'axios';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -8,12 +8,27 @@ export default function Login() {
 
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     // Aquí iría la lógica de autenticación
-    console.log('Email:', email);
-    console.log('Password:', password);
-    navigate('/control-panel')
+    try {
+      const loginResponse = await axios.post(
+        "http://localhost:8080/auth/login",
+        {
+          email,
+          password,
+        }
+      );
+      console.log("Email:", email);
+      console.log("Password:", password);
+      console.log(loginResponse.data);
+      if (loginResponse.status != 200) {
+        throw new Error("Error en la solicitud");
+      }
+      navigate("/control-panel");
+    } catch (error) {
+      console.error("Error al obtener los usuarios:", error);
+    }
   };
 
   const handleForgotPassword = () => {
@@ -26,7 +41,7 @@ export default function Login() {
 
   return (
     <div style={styles.container}>
-      <form onSubmit={handleSubmit} style={styles.form}>
+      <form onSubmit={handleLogin} style={styles.form}>
         <h2>Iniciar sesión</h2>
 
         <div style={styles.inputGroup}>
