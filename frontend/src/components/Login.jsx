@@ -36,7 +36,7 @@ export default function Login() {
   };
 
   const handleForgotPassword = () => {
-    alert('Redirigir a recuperar contraseña');
+    navigate('/reset-password')
   };
 
   const handleRegister = () => {
