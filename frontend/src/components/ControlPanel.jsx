@@ -5,15 +5,15 @@ import axiosInstance from '../api/axiosInstance';
 export default function ControlPanel() {
   const navigate = useNavigate();
 
-  const nitUsuario = '1234567-8';
-
   const [articulos, setArticulos] = useState([]);
   const [carrito, setCarrito] = useState([]);
-  const [direccionFacturacion, setDireccionFacturacion] = useState('');
+  const [direccionFacturacion, setDireccionFacturacion] = useState('buenas');
+  const [nitUsuario, setNitUsuario] = useState('');
   const [editandoDireccion, setEditandoDireccion] = useState(false);
 
   useEffect(() => {
     actualizarCarrito();
+    obtenerDatosUsuario()
   }, []);
 
   const actualizarCarrito = async () => {
@@ -29,13 +29,14 @@ export default function ControlPanel() {
     }
   };
 
-  const obtenerDireccion = async () => {
+  const obtenerDatosUsuario = async () => {
     try {
-      const articleResponse = await axiosInstance.get("http://localhost:8080/article");
-      if (articleResponse.status !== 200) {
+      const userResponse = await axiosInstance.get(`http://localhost:8080/user/${localStorage.getItem('email')}`);
+      if (userResponse.status !== 200) {
         throw new Error("Error en la solicitud");
       }
-      setArticulos(articleResponse.data);
+      setDireccionFacturacion(userResponse.data.direccionFacturacion)
+      setNitUsuario(userResponse.data.nit)
     } catch (error) {
       alert("No se pudieron obtener los articulos");
       console.error("Error al obtener articulos:", error);
@@ -58,6 +59,8 @@ export default function ControlPanel() {
         item.id === articulo.id ? { ...item, cantidad: item.cantidad + 1 } : item
       );
       setCarrito(nuevoCarrito);
+
+      console.log("carrito " + JSON.stringify(carrito))
     } else {
       setCarrito(prev => [...prev, { ...articulo, cantidad: 1 }]);
     }

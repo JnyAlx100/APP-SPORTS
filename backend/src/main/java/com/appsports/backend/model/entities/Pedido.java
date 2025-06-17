@@ -25,6 +25,9 @@ public class Pedido {
     @Column(name = "direccion_facturacion")
     private String direccionFacturacion;
 
+    @Column(name = "total")
+    private Integer total;
+
     @ManyToOne
     @JoinColumn(name = "usuario_idusuario")
     private Usuario usuario;

@@ -27,6 +27,7 @@ export default function Login() {
       }
       localStorage.setItem('token', loginResponse.data.access_token);
       localStorage.setItem('refreshToken', loginResponse.data.refresh_token)
+      localStorage.setItem('email', email)
       navigate("/control-panel");
     } catch (error) {
       alert('Correo o contrasena incorrectos')

@@ -25,4 +25,7 @@ public class DetallePedido {
     @ManyToOne
     @JoinColumn(name = "articulo_idarticulo")
     private Articulo articulo;
+
+    @Column(name = "cantidad")
+    private Integer cantidad;
 }
