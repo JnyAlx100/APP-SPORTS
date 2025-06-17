@@ -30,6 +30,7 @@ public class UsuarioController {
     public ResponseEntity<Usuario> getUsuarios(@PathVariable String email) {
         Usuario usuario = usuarioRepository.findByEmail(email).get();
         usuario.setTokens(new ArrayList<>());
+        usuario.setPedidos(new ArrayList<>());
         return new ResponseEntity<>(usuario, HttpStatus.OK);
     }
 }

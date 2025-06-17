@@ -64,7 +64,7 @@ export default function Register() {
   };
 
   const fieldsAreValid = () => {
-    if (!formData.fechaNacimiento || formData.fechaNacimiento == '') {
+    if (!formData.fechaNacimiento || formData.fechaNacimiento === '') {
       alert('Por favor, ingrese una fecha de nacimiento');
       return false;
     }

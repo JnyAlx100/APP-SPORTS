@@ -5,18 +5,20 @@ import axiosInstance from '../api/axiosInstance';
 export default function ControlPanel() {
   const navigate = useNavigate();
 
+  const [userInfo, setUserInfo] = useState({});
   const [articulos, setArticulos] = useState([]);
   const [carrito, setCarrito] = useState([]);
+  const [total, setTotal] = useState(0);
   const [direccionFacturacion, setDireccionFacturacion] = useState('buenas');
   const [nitUsuario, setNitUsuario] = useState('');
   const [editandoDireccion, setEditandoDireccion] = useState(false);
 
   useEffect(() => {
-    actualizarCarrito();
+    actualizarArticulos();
     obtenerDatosUsuario()
   }, []);
 
-  const actualizarCarrito = async () => {
+  const actualizarArticulos = async () => {
     try {
       const articleResponse = await axiosInstance.get("http://localhost:8080/article");
       if (articleResponse.status !== 200) {
@@ -35,6 +37,7 @@ export default function ControlPanel() {
       if (userResponse.status !== 200) {
         throw new Error("Error en la solicitud");
       }
+      setUserInfo(userResponse.data)
       setDireccionFacturacion(userResponse.data.direccionFacturacion)
       setNitUsuario(userResponse.data.nit)
     } catch (error) {
@@ -48,6 +51,7 @@ export default function ControlPanel() {
       alert('No hay stock disponible');
       return;
     }
+    setTotal(total +  articulo.precio)
     const nuevosArticulos = articulos.map(item =>
       item.id === articulo.id ? { ...item, stock: item.stock - 1 } : item
     );
@@ -66,7 +70,7 @@ export default function ControlPanel() {
     }
   };
 
-  const confirmarPedido = () => {
+  const confirmarPedido = async () => {
     if (carrito.length === 0) {
       alert('El carrito está vacío');
       return;
@@ -76,18 +80,68 @@ export default function ControlPanel() {
       return;
     }
 
+    const orderId = generateOrderId();
+
+    try {
+      let detalles = []
+      carrito.map(item => {
+        detalles.push({
+          pedido: {
+            id: orderId
+          },
+          articulo: {
+            id: item.id
+          },
+          cantidad: item.cantidad
+        })
+      });
+      const loginResponse = await axiosInstance.post(
+        "http://localhost:8080/order",
+        {
+          id: orderId,
+          status: "COMPLETADO",
+          direccionFacturacion,
+          total,
+          usuario: { id: userInfo.id},
+          detalles
+        }
+      );
+      if (loginResponse.status !== 200) {
+        throw new Error("Error en la solicitud");
+      }
+    } catch (error) {
+      alert('Correo o contrasena incorrectos')
+      console.error("Error al obtener los usuarios:", error);
+    }
+
     console.log('Pedido confirmado:', carrito);
     console.log('NIT:', nitUsuario);
     console.log('Dirección:', direccionFacturacion);
 
+    actualizarArticulos()
     alert('Pedido realizado exitosamente');
     setCarrito([]);
     setDireccionFacturacion('');
   };
 
+  const generateOrderId = () => {
+    const caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let codigo = "";
+    for (let i = 0; i < 9; i++) {
+      const randomIndex = Math.floor(Math.random() * caracteres.length);
+      codigo += caracteres[randomIndex];
+    }
+    return codigo;
+  };
+
   const handleProfile = () => navigate('/profile');
   const handleOrders = () => navigate('/orders');
-  const handleLogout = () => navigate('/');
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('email');
+    navigate('/')
+  };
 
   return (
     <div style={styles.container}>
@@ -153,6 +207,7 @@ export default function ControlPanel() {
               ))}
             </ul>
           )}
+          <h3>Total: Q{total}</h3>
 
           <div style={styles.formContainer}>
             <div style={styles.formGroup}>
