@@ -1,32 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../api/axiosInstance';
 
 export default function Profile() {
   const navigate = useNavigate();
 
-  const initialUser = {
-    nombres: 'Juan',
-    apellidos: 'Pérez',
-    nit: '1234567-8',
-    direccionFacturacion: 'Ciudad de Guatemala, Zona 10',
-    correo: 'juan.perez@example.com'
-  };
-
-  const [user, setUser] = useState(initialUser);
+  const [user, setUser] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setUser(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = () => {
-    console.log('Datos guardados:', user);
-    alert('Perfil actualizado correctamente');
+  const handleSave = async () => {
+    try {
+      const userResponse = await axiosInstance.patch(`http://localhost:8080/user`, {
+        id: user.id,
+        direccionFacturacion: user.direccionFacturacion,
+        nit: user.nit,
+        nombres: user.nombres,
+        apellidos: user.apellidos,
+        email: user.email
+      });
+      if (userResponse.status !== 200) {
+        throw new Error("Error en la solicitud");
+      }
+      console.log('Datos guardados:', user);
+      alert('Perfil actualizado correctamente');
+      obtenerDatosUsuario()
+    } catch (error) {
+      alert("No se pudieron actualizar los datos");
+      console.error("Error al actualizar datos:", error);
+    }
   };
 
   const handleBack = () => {
     navigate('/control-panel')
   };
+
+  const obtenerDatosUsuario = async () => {
+    try {
+      const userResponse = await axiosInstance.get(`http://localhost:8080/user/${localStorage.getItem('email')}`);
+      if (userResponse.status !== 200) {
+        throw new Error("Error en la solicitud");
+      }
+      setUser(userResponse.data)
+    } catch (error) {
+      alert("No se pudieron obtener los articulos");
+      console.error("Error al obtener articulos:", error);
+    }
+  }
+
+  useEffect(() => {
+    obtenerDatosUsuario()
+  }, []);
 
   return (
     <div style={styles.container}>
@@ -81,7 +108,7 @@ export default function Profile() {
         <input
           type="email"
           name="correo"
-          value={user.correo}
+          value={user.email}
           onChange={handleChange}
           style={styles.input}
         />

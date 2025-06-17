@@ -5,10 +5,7 @@ import com.appsports.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,5 +29,16 @@ public class UsuarioController {
         usuario.setTokens(new ArrayList<>());
         usuario.setPedidos(new ArrayList<>());
         return new ResponseEntity<>(usuario, HttpStatus.OK);
+    }
+
+    @PatchMapping("")
+    public ResponseEntity<Usuario> updateUsuario(@RequestBody Usuario usuario) {
+        Usuario usuarioAntiguo = usuarioRepository.findByEmail(usuario.getEmail()).get();
+        usuario.setPassword(usuarioAntiguo.getPassword());
+        usuario.setFechaNacimiento(usuarioAntiguo.getFechaNacimiento());
+        Usuario usuarioActualizado = usuarioRepository.save(usuario);
+        usuarioActualizado.setTokens(new ArrayList<>());
+        usuarioActualizado.setPedidos(new ArrayList<>());
+        return new ResponseEntity<>(usuarioActualizado, HttpStatus.OK);
     }
 }
