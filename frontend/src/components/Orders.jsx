@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../api/axiosInstance';
 
 export default function Orders() {
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    obtenerOrdenes();
+  }, []);
 
   const initialOrders = [
     {
@@ -34,7 +39,39 @@ export default function Orders() {
     }
   ];
 
-  const [orders] = useState(initialOrders);
+  const [orders, setOrders] = useState(initialOrders);
+
+  const obtenerOrdenes = async () => {
+    try {
+      const userResponse = await axiosInstance.get(
+        `http://localhost:8080/order/${localStorage.getItem("email")}`
+      );
+      if (userResponse.status !== 200) {
+        throw new Error("Error en la solicitud");
+      }
+      let incomingOrders = []
+      userResponse.data.map( item => {
+        let detalles = []
+        item.detalles.map( detalle => {
+          detalles.push({
+            nombre: detalle.articulo.nombre,
+            cantidad: detalle.cantidad,
+            precio: detalle.articulo.precio
+          })
+        })
+        incomingOrders.push({
+          id: item.id,
+          direccion: item.direccionFacturacion,
+          status: item.status,
+          detalle: detalles
+        })
+      })
+      setOrders(incomingOrders)
+    } catch (error) {
+      alert("No se pudieron obtener los articulos");
+      console.error("Error al obtener articulos:", error);
+    }
+  };
 
   const calcularTotal = (detalle) => {
     return detalle.reduce((total, item) => total + (item.cantidad * item.precio), 0);
