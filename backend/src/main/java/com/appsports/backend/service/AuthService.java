@@ -2,16 +2,22 @@ package com.appsports.backend.service;
 
 import com.appsports.backend.model.entities.Token;
 import com.appsports.backend.model.entities.Usuario;
+import com.appsports.backend.model.entities.UsuarioAdmin;
 import com.appsports.backend.model.request.LoginRequest;
 import com.appsports.backend.model.request.RegisterRequest;
+import com.appsports.backend.model.request.ResetPasswordRequest;
 import com.appsports.backend.model.response.TokenResponse;
 import com.appsports.backend.repository.TokenRepository;
+import com.appsports.backend.repository.UsuarioAdminRepository;
 import com.appsports.backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.catalina.User;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +31,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final UsuarioAdminRepository usuarioAdminRepository;
 
     public TokenResponse register(RegisterRequest registerRequest) {
         var user = Usuario.builder()
@@ -104,5 +111,17 @@ public class AuthService {
                 .revoked(false)
                 .build();
         tokenRepository.save(token);
+    }
+
+    public ResponseEntity<String> resetPassword(final ResetPasswordRequest resetPasswordRequest) {
+        UsuarioAdmin usuarioAdmin = usuarioAdminRepository.findById(resetPasswordRequest.getAdminUser()).get();
+        if (usuarioAdmin.getPassword().equals(resetPasswordRequest.getAdminPassword())) {
+            //actualizar contrasena
+            Usuario usuario = usuarioRepository.findByEmail(resetPasswordRequest.getAccountEmail()).get();
+            usuario.setPassword((new BCryptPasswordEncoder()).encode(resetPasswordRequest.getAccountNewPassword()));
+            usuarioRepository.save(usuario);
+            return ResponseEntity.ok("Password reset successful");
+        }
+        return ResponseEntity.badRequest().body("Account not found or invalid admin account");
     }
 }

@@ -2,6 +2,7 @@ package com.appsports.backend.controller;
 
 import com.appsports.backend.model.request.LoginRequest;
 import com.appsports.backend.model.request.RegisterRequest;
+import com.appsports.backend.model.request.ResetPasswordRequest;
 import com.appsports.backend.model.response.TokenResponse;
 import com.appsports.backend.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,5 +32,10 @@ public class AuthController {
     @PostMapping("/refresh")
     public TokenResponse refreshToken(@RequestHeader(HttpHeaders.AUTHORIZATION) final String authHeader) {
         return authService.refreshToken(authHeader);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody final ResetPasswordRequest resetPasswordRequest) {
+        return authService.resetPassword(resetPasswordRequest);
     }
 }

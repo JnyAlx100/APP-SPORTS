@@ -9,13 +9,18 @@ export default function ControlPanel() {
   const [articulos, setArticulos] = useState([]);
   const [carrito, setCarrito] = useState([]);
   const [total, setTotal] = useState(0);
-  const [direccionFacturacion, setDireccionFacturacion] = useState('buenas');
+  const [direccionFacturacion, setDireccionFacturacion] = useState('');
   const [nitUsuario, setNitUsuario] = useState('');
   const [editandoDireccion, setEditandoDireccion] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
     actualizarArticulos();
-    obtenerDatosUsuario()
+    obtenerDatosUsuario();
+
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const actualizarArticulos = async () => {
@@ -37,21 +42,22 @@ export default function ControlPanel() {
       if (userResponse.status !== 200) {
         throw new Error("Error en la solicitud");
       }
-      setUserInfo(userResponse.data)
-      setDireccionFacturacion(userResponse.data.direccionFacturacion)
-      setNitUsuario(userResponse.data.nit)
+      setUserInfo(userResponse.data);
+      setDireccionFacturacion(userResponse.data.direccionFacturacion);
+      setNitUsuario(userResponse.data.nit);
     } catch (error) {
-      alert("No se pudieron obtener los articulos");
-      console.error("Error al obtener articulos:", error);
+      alert("No se pudieron obtener los datos del usuario");
+      console.error("Error al obtener usuario:", error);
     }
-  }
+  };
 
   const agregarAlCarrito = (articulo) => {
     if (articulo.stock === 0) {
       alert('No hay stock disponible');
       return;
     }
-    setTotal(total +  articulo.precio)
+    setTotal(prevTotal => prevTotal + articulo.precio);
+
     const nuevosArticulos = articulos.map(item =>
       item.id === articulo.id ? { ...item, stock: item.stock - 1 } : item
     );
@@ -63,11 +69,31 @@ export default function ControlPanel() {
         item.id === articulo.id ? { ...item, cantidad: item.cantidad + 1 } : item
       );
       setCarrito(nuevoCarrito);
-
-      console.log("carrito " + JSON.stringify(carrito))
     } else {
       setCarrito(prev => [...prev, { ...articulo, cantidad: 1 }]);
     }
+  };
+
+  const quitarDelCarrito = (articulo) => {
+    const itemEnCarrito = carrito.find(item => item.id === articulo.id);
+    if (!itemEnCarrito) return;
+
+    setTotal(prevTotal => prevTotal - articulo.precio);
+
+    if (itemEnCarrito.cantidad === 1) {
+      const nuevoCarrito = carrito.filter(item => item.id !== articulo.id);
+      setCarrito(nuevoCarrito);
+    } else {
+      const nuevoCarrito = carrito.map(item =>
+        item.id === articulo.id ? { ...item, cantidad: item.cantidad - 1 } : item
+      );
+      setCarrito(nuevoCarrito);
+    }
+
+    const nuevosArticulos = articulos.map(item =>
+      item.id === articulo.id ? { ...item, stock: item.stock + 1 } : item
+    );
+    setArticulos(nuevosArticulos);
   };
 
   const confirmarPedido = async () => {
@@ -83,18 +109,12 @@ export default function ControlPanel() {
     const orderId = generateOrderId();
 
     try {
-      let detalles = []
-      carrito.map(item => {
-        detalles.push({
-          pedido: {
-            id: orderId
-          },
-          articulo: {
-            id: item.id
-          },
-          cantidad: item.cantidad
-        })
-      });
+      const detalles = carrito.map(item => ({
+        pedido: { id: orderId },
+        articulo: { id: item.id },
+        cantidad: item.cantidad
+      }));
+
       const loginResponse = await axiosInstance.post(
         "http://localhost:8080/order",
         {
@@ -102,24 +122,20 @@ export default function ControlPanel() {
           status: "COMPLETADO",
           direccionFacturacion,
           total,
-          usuario: { id: userInfo.id},
+          usuario: { id: userInfo.id },
           detalles
         }
       );
       if (loginResponse.status !== 200) {
         throw new Error("Error en la solicitud");
       }
+      alert(`Su pedido ${orderId} se ha procesado exitosamente`);
     } catch (error) {
-      alert('Correo o contrasena incorrectos')
-      console.error("Error al obtener los usuarios:", error);
+      alert('Error al realizar el pedido');
+      console.error("Error:", error);
     }
 
-    console.log('Pedido confirmado:', carrito);
-    console.log('NIT:', nitUsuario);
-    console.log('Dirección:', direccionFacturacion);
-
-    actualizarArticulos()
-    alert('Pedido realizado exitosamente');
+    actualizarArticulos();
     setCarrito([]);
     setDireccionFacturacion('');
   };
@@ -140,7 +156,7 @@ export default function ControlPanel() {
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('email');
-    navigate('/')
+    navigate('/');
   };
 
   return (
@@ -154,44 +170,27 @@ export default function ControlPanel() {
         </div>
       </nav>
 
-      <div style={styles.mainContent}>
+      <div style={isMobile ? styles.mobileContent : styles.mainContent}>
         <div style={styles.articlesSection}>
           <h2>Lista de Artículos</h2>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.tableHeaderCell}>Artículo</th>
-                <th style={styles.tableHeaderCell}>Descripción</th>
-                <th style={styles.tableHeaderCell}>Monto</th>
-                <th style={styles.tableHeaderCell}>Stock</th>
-                <th style={styles.tableHeaderCell}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {articulos.map((item) => (
-                <tr key={item.id}>
-                  <td style={styles.tableCell}>
-                    <div style={styles.articleContainer}>
-                      <img src={item.urlImagen} alt={item.nombre} style={styles.image} />
-                      <div>{item.nombre}</div>
-                    </div>
-                  </td>
-                  <td style={styles.tableCell}>{item.descripcion}</td>
-                  <td style={styles.tableCell}>Q{item.precio}</td>
-                  <td style={styles.tableCell}>{item.stock}</td>
-                  <td style={styles.actionCell}>
-                    <button
-                      onClick={() => agregarAlCarrito(item)}
-                      style={styles.addButton}
-                      disabled={item.stock === 0}
-                    >
-                      Agregar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div style={styles.articlesGrid}>
+            {articulos.map((item) => (
+              <div key={item.id} style={styles.articleCard}>
+                <img src={item.urlImagen} alt={item.nombre} style={styles.image} />
+                <h4>{item.nombre}</h4>
+                <p>{item.descripcion}</p>
+                <p><strong>Q{item.precio}</strong></p>
+                <p>Stock: {item.stock}</p>
+                <button
+                  onClick={() => agregarAlCarrito(item)}
+                  style={styles.addButton}
+                  disabled={item.stock === 0}
+                >
+                  Agregar
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div style={styles.cartSection}>
@@ -203,36 +202,33 @@ export default function ControlPanel() {
               {carrito.map((item, index) => (
                 <li key={index}>
                   {item.nombre} x{item.cantidad} - Q{item.precio * item.cantidad}
+                  <button onClick={() => quitarDelCarrito(item)} style={styles.removeButton}>Quitar</button>
                 </li>
               ))}
             </ul>
           )}
           <h3>Total: Q{total}</h3>
 
-          <div style={styles.formContainer}>
-            <div style={styles.formGroup}>
-              <label>NIT:</label>
-              <div style={styles.inputRow}>
-                <input type="text" value={nitUsuario} readOnly style={styles.inputField} />
-              </div>
-            </div>
+          <div style={styles.formGroup}>
+            <label>NIT:</label>
+            <input type="text" value={nitUsuario} readOnly style={styles.inputField} />
+          </div>
 
-            <div style={styles.formGroup}>
-              <label>Dirección de Facturación:</label>
-              <div style={styles.inputRow}>
-                <input
-                  type="text"
-                  value={direccionFacturacion}
-                  onChange={(e) => setDireccionFacturacion(e.target.value)}
-                  readOnly={!editandoDireccion}
-                  style={styles.inputField}
-                />
-                {!editandoDireccion ? (
-                  <button style={styles.editButton} onClick={() => setEditandoDireccion(true)}>Editar</button>
-                ) : (
-                  <button style={styles.saveButton} onClick={() => setEditandoDireccion(false)}>Guardar</button>
-                )}
-              </div>
+          <div style={styles.formGroup}>
+            <label>Dirección de Facturación:</label>
+            <div style={styles.inputRow}>
+              <input
+                type="text"
+                value={direccionFacturacion}
+                onChange={(e) => setDireccionFacturacion(e.target.value)}
+                readOnly={!editandoDireccion}
+                style={styles.inputField}
+              />
+              {!editandoDireccion ? (
+                <button style={styles.editButton} onClick={() => setEditandoDireccion(true)}>Editar</button>
+              ) : (
+                <button style={styles.saveButton} onClick={() => setEditandoDireccion(false)}>Guardar</button>
+              )}
             </div>
           </div>
 
@@ -264,79 +260,81 @@ const styles = {
   menuItem: { cursor: 'pointer' },
   mainContent: {
     display: 'flex',
-    padding: '30px',
+    padding: '20px',
     gap: '30px',
-    alignItems: 'flex-start'
+    flexDirection: 'row',
+  },
+  mobileContent: {
+    display: 'flex',
+    padding: '20px',
+    flexDirection: 'column',
   },
   articlesSection: { flex: 3 },
+  articlesGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gap: '20px'
+  },
+  articleCard: {
+    backgroundColor: '#fff',
+    borderRadius: '10px',
+    padding: '15px',
+    boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+    textAlign: 'center'
+  },
   cartSection: {
     flex: 1,
     backgroundColor: '#fff',
     padding: '20px',
     borderRadius: '10px',
     boxShadow: '0 0 10px rgba(0,0,0,0.1)',
-    alignSelf: 'flex-start'
+    marginTop: '20px'
   },
-  table: {
+  image: {
     width: '100%',
-    borderCollapse: 'collapse',
-    marginBottom: '20px'
+    height: '150px',
+    objectFit: 'cover',
+    borderRadius: '8px',
+    marginBottom: '10px'
   },
-  tableHeaderCell: {
-    borderBottom: '1px solid #ccc',
-    textAlign: 'center',
-    padding: '10px'
-  },
-  tableCell: { textAlign: 'center', padding: '10px' },
-  actionCell: { textAlign: 'center', padding: '5px', border: 'none' },
   addButton: {
-    padding: '8px 16px',
+    padding: '10px 20px',
     backgroundColor: '#28a745',
     border: 'none',
     borderRadius: '20px',
     color: '#fff',
-    cursor: 'pointer',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+    cursor: 'pointer'
+  },
+  removeButton: {
+    marginLeft: '10px',
+    padding: '5px 10px',
+    backgroundColor: '#dc3545',
+    border: 'none',
+    borderRadius: '5px',
+    color: '#fff',
+    cursor: 'pointer'
   },
   confirmButton: {
+    marginTop: '20px',
     padding: '12px 20px',
     backgroundColor: '#ffc107',
     border: 'none',
-    borderRadius: '4px',
+    borderRadius: '5px',
     color: '#000',
     fontWeight: 'bold',
     cursor: 'pointer',
-    marginTop: '20px',
     width: '100%'
   },
-  image: {
-    width: '80px',
-    height: '80px',
-    objectFit: 'cover',
-    borderRadius: '8px',
-    marginBottom: '5px'
-  },
-  articleContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center'
-  },
-  formContainer: {
-    marginTop: '20px'
-  },
-  formGroup: {
-    marginBottom: '15px'
-  },
-  inputRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px'
-  },
+  formGroup: { marginBottom: '15px' },
   inputField: {
-    flex: 1,
+    width: '100%',
     padding: '10px',
     borderRadius: '4px',
     border: '1px solid #ccc'
+  },
+  inputRow: {
+    display: 'flex',
+    gap: '10px'
   },
   editButton: {
     padding: '8px 16px',
