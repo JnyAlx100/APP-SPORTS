@@ -25,6 +25,8 @@ export default function Login() {
       if (loginResponse.status !== 200) {
         throw new Error("Error en la solicitud");
       }
+      localStorage.setItem('token', loginResponse.data.access_token);
+      localStorage.setItem('refreshToken', loginResponse.data.refresh_token)
       navigate("/control-panel");
     } catch (error) {
       alert('Correo o contrasena incorrectos')

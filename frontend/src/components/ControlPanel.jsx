@@ -1,35 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../api/axiosInstance';
 
 export default function ControlPanel() {
   const navigate = useNavigate();
-  
-  const initialArticulos = [
-    { id: 1, nombre: 'Balón de Fútbol', descripcion: 'Balón profesional', monto: 250, stock: 10, imagen: 'https://via.placeholder.com/100?text=Balon' },
-    { id: 2, nombre: 'Raqueta de Tenis', descripcion: 'Raqueta de carbono', monto: 500, stock: 5, imagen: 'https://via.placeholder.com/100?text=Raqueta' },
-    { id: 3, nombre: 'Guantes de Boxeo', descripcion: 'Guantes de cuero', monto: 300, stock: 8, imagen: 'https://via.placeholder.com/100?text=Guantes' },
-    { id: 4, nombre: 'Pesas 10kg', descripcion: 'Par de pesas', monto: 150, stock: 15, imagen: 'https://via.placeholder.com/100?text=Pesas' }
-  ];
 
   const nitUsuario = '1234567-8';
 
-  const [articulos, setArticulos] = useState(initialArticulos);
+  const [articulos, setArticulos] = useState([]);
   const [carrito, setCarrito] = useState([]);
   const [direccionFacturacion, setDireccionFacturacion] = useState('');
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [editandoDireccion, setEditandoDireccion] = useState(false);
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    actualizarCarrito();
   }, []);
+
+  const actualizarCarrito = async () => {
+    try {
+      const articleResponse = await axiosInstance.get("http://localhost:8080/article");
+      if (articleResponse.status !== 200) {
+        throw new Error("Error en la solicitud");
+      }
+      setArticulos(articleResponse.data);
+    } catch (error) {
+      alert("No se pudieron obtener los articulos");
+      console.error("Error al obtener articulos:", error);
+    }
+  };
+
+  const obtenerDireccion = async () => {
+    try {
+      const articleResponse = await axiosInstance.get("http://localhost:8080/article");
+      if (articleResponse.status !== 200) {
+        throw new Error("Error en la solicitud");
+      }
+      setArticulos(articleResponse.data);
+    } catch (error) {
+      alert("No se pudieron obtener los articulos");
+      console.error("Error al obtener articulos:", error);
+    }
+  }
 
   const agregarAlCarrito = (articulo) => {
     if (articulo.stock === 0) {
       alert('No hay stock disponible');
       return;
     }
-
     const nuevosArticulos = articulos.map(item =>
       item.id === articulo.id ? { ...item, stock: item.stock - 1 } : item
     );
@@ -65,17 +82,9 @@ export default function ControlPanel() {
     setDireccionFacturacion('');
   };
 
-  const handleProfile = () => {
-    navigate('/profile')
-  }
-
-  const handleOrders = () => {
-    navigate('/orders')
-  }
-
-  const handleLogout = () => {
-    navigate('/')
-  }
+  const handleProfile = () => navigate('/profile');
+  const handleOrders = () => navigate('/orders');
+  const handleLogout = () => navigate('/');
 
   return (
     <div style={styles.container}>
@@ -88,10 +97,9 @@ export default function ControlPanel() {
         </div>
       </nav>
 
-      <div style={styles.content}>
-        <h2>Lista de Artículos</h2>
-
-        {!isMobile ? (
+      <div style={styles.mainContent}>
+        <div style={styles.articlesSection}>
+          <h2>Lista de Artículos</h2>
           <table style={styles.table}>
             <thead>
               <tr>
@@ -99,7 +107,7 @@ export default function ControlPanel() {
                 <th style={styles.tableHeaderCell}>Descripción</th>
                 <th style={styles.tableHeaderCell}>Monto</th>
                 <th style={styles.tableHeaderCell}>Stock</th>
-                <th style={styles.actionHeaderCell}></th>
+                <th style={styles.tableHeaderCell}></th>
               </tr>
             </thead>
             <tbody>
@@ -107,12 +115,12 @@ export default function ControlPanel() {
                 <tr key={item.id}>
                   <td style={styles.tableCell}>
                     <div style={styles.articleContainer}>
-                      <img src={item.imagen} alt={item.nombre} style={styles.image} />
+                      <img src={item.urlImagen} alt={item.nombre} style={styles.image} />
                       <div>{item.nombre}</div>
                     </div>
                   </td>
                   <td style={styles.tableCell}>{item.descripcion}</td>
-                  <td style={styles.tableCell}>Q{item.monto}</td>
+                  <td style={styles.tableCell}>Q{item.precio}</td>
                   <td style={styles.tableCell}>{item.stock}</td>
                   <td style={styles.actionCell}>
                     <button
@@ -127,61 +135,53 @@ export default function ControlPanel() {
               ))}
             </tbody>
           </table>
-        ) : (
-          <div style={styles.mobileList}>
-            {articulos.map(item => (
-              <div key={item.id} style={styles.mobileCard}>
-                <img src={item.imagen} alt={item.nombre} style={styles.image} />
-                <h3>{item.nombre}</h3>
-                <p>{item.descripcion}</p>
-                <p>Q{item.monto}</p>
-                <p>Stock: {item.stock}</p>
-                <button
-                  onClick={() => agregarAlCarrito(item)}
-                  style={styles.addButton}
-                  disabled={item.stock === 0}
-                >
-                  Agregar
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <h2>Carrito de Compras</h2>
-        {carrito.length === 0 ? (
-          <p>No hay artículos en el carrito.</p>
-        ) : (
-          <ul>
-            {carrito.map((item, index) => (
-              <li key={index}>
-                {item.nombre} x{item.cantidad} - Q{item.monto * item.cantidad}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div style={styles.formContainer}>
-          <div style={styles.formGroup}>
-            <label>NIT:</label>
-            <input type="text" value={nitUsuario} readOnly style={styles.smallInput} />
-          </div>
-
-          <div style={styles.formGroup}>
-            <label>Dirección de Facturación:</label>
-            <input
-              type="text"
-              value={direccionFacturacion}
-              onChange={(e) => setDireccionFacturacion(e.target.value)}
-              style={styles.smallInput}
-              placeholder="Ingrese la dirección"
-            />
-          </div>
         </div>
 
-        <button onClick={confirmarPedido} style={styles.confirmButton}>
-          Confirmar Pedido
-        </button>
+        <div style={styles.cartSection}>
+          <h2>Carrito de Compras</h2>
+          {carrito.length === 0 ? (
+            <p>No hay artículos en el carrito.</p>
+          ) : (
+            <ul>
+              {carrito.map((item, index) => (
+                <li key={index}>
+                  {item.nombre} x{item.cantidad} - Q{item.precio * item.cantidad}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div style={styles.formContainer}>
+            <div style={styles.formGroup}>
+              <label>NIT:</label>
+              <div style={styles.inputRow}>
+                <input type="text" value={nitUsuario} readOnly style={styles.inputField} />
+              </div>
+            </div>
+
+            <div style={styles.formGroup}>
+              <label>Dirección de Facturación:</label>
+              <div style={styles.inputRow}>
+                <input
+                  type="text"
+                  value={direccionFacturacion}
+                  onChange={(e) => setDireccionFacturacion(e.target.value)}
+                  readOnly={!editandoDireccion}
+                  style={styles.inputField}
+                />
+                {!editandoDireccion ? (
+                  <button style={styles.editButton} onClick={() => setEditandoDireccion(true)}>Editar</button>
+                ) : (
+                  <button style={styles.saveButton} onClick={() => setEditandoDireccion(false)}>Guardar</button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <button onClick={confirmarPedido} style={styles.confirmButton}>
+            Confirmar Pedido
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -201,19 +201,23 @@ const styles = {
     padding: '15px',
     color: '#fff'
   },
-  logo: {
-    fontSize: '20px',
-    fontWeight: 'bold'
-  },
-  menu: {
+  logo: { fontSize: '20px', fontWeight: 'bold' },
+  menu: { display: 'flex', gap: '20px' },
+  menuItem: { cursor: 'pointer' },
+  mainContent: {
     display: 'flex',
-    gap: '20px'
+    padding: '30px',
+    gap: '30px',
+    alignItems: 'flex-start'
   },
-  menuItem: {
-    cursor: 'pointer'
-  },
-  content: {
-    padding: '30px'
+  articlesSection: { flex: 3 },
+  cartSection: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: '20px',
+    borderRadius: '10px',
+    boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+    alignSelf: 'flex-start'
   },
   table: {
     width: '100%',
@@ -225,20 +229,8 @@ const styles = {
     textAlign: 'center',
     padding: '10px'
   },
-  actionHeaderCell: {
-    borderBottom: 'none',
-    textAlign: 'center',
-    padding: '10px'
-  },
-  tableCell: {
-    textAlign: 'center',
-    padding: '10px'
-  },
-  actionCell: {
-    textAlign: 'center',
-    padding: '5px',
-    border: 'none'
-  },
+  tableCell: { textAlign: 'center', padding: '10px' },
+  actionCell: { textAlign: 'center', padding: '5px', border: 'none' },
   addButton: {
     padding: '8px 16px',
     backgroundColor: '#28a745',
@@ -256,7 +248,8 @@ const styles = {
     color: '#000',
     fontWeight: 'bold',
     cursor: 'pointer',
-    marginTop: '20px'
+    marginTop: '20px',
+    width: '100%'
   },
   image: {
     width: '80px',
@@ -270,36 +263,37 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center'
   },
-  mobileList: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '20px',
-    justifyContent: 'center'
-  },
-  mobileCard: {
-    width: '90%',
-    maxWidth: '300px',
-    backgroundColor: '#fff',
-    padding: '20px',
-    borderRadius: '10px',
-    boxShadow: '0 0 10px rgba(0,0,0,0.1)',
-    textAlign: 'center'
-  },
   formContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start'
+    marginTop: '20px'
   },
   formGroup: {
-    marginTop: '15px',
-    width: '100%',
-    maxWidth: '400px'
+    marginBottom: '15px'
   },
-  smallInput: {
-    width: '100%',
+  inputRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  inputField: {
+    flex: 1,
     padding: '10px',
     borderRadius: '4px',
-    border: '1px solid #ccc',
-    marginTop: '5px'
+    border: '1px solid #ccc'
+  },
+  editButton: {
+    padding: '8px 16px',
+    backgroundColor: '#007bff',
+    border: 'none',
+    borderRadius: '5px',
+    color: '#fff',
+    cursor: 'pointer'
+  },
+  saveButton: {
+    padding: '8px 16px',
+    backgroundColor: '#28a745',
+    border: 'none',
+    borderRadius: '5px',
+    color: '#fff',
+    cursor: 'pointer'
   }
 };
